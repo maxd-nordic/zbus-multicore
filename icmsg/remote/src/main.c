@@ -24,5 +24,16 @@ int main(void)
 	}
 
 	LOG_INF("ZBus Multicore sample started");
+
+	while (true) {
+		struct sensor_data sensor = {
+			.temperature = 23.0,
+			.ts = k_uptime_get_32(),
+		};
+		LOG_INF("Sending sensor data: temperature %f, ts %u",
+			sensor.temperature, sensor.ts);
+		zbus_chan_pub(&sensor_chan, &sensor, K_NO_WAIT);
+		k_sleep(K_SECONDS(1));
+	}
 	return 0;
 }
