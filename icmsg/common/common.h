@@ -17,4 +17,7 @@ struct data_packet {
 	unsigned char data[DATA_SIZE];
 };
 
+/* init ipc connection and get ready for recv/send */
+int init_ipc(void);
+
 #endif /* __COMMON_H__ */
