@@ -18,19 +18,20 @@ static void ep_bound(void *priv)
 
 static struct ipc_ept ep;
 
-static void agent_cb(const void *data, size_t len);
-
 static void ep_recv(const void *data, size_t len, void *priv)
 {
-	if (len != sizeof(struct data_packet))
-	{
-		LOG_ERR("Unexpected message length");
-		return;
-	}
-
 	LOG_INF("Received message with size %d", len);
 
-	agent_cb(data, len);
+	struct data_packet_header *header = (struct data_packet_header *)data;
+	uint8_t *payload = (uint8_t *)data + sizeof(struct data_packet_header);
+	LOG_INF("Received message with channel_id %d", header->channel_id);
+
+	STRUCT_SECTION_FOREACH(zbus_multicore_rx, agent) {
+		if (agent->channel_id == header->channel_id) {
+			zbus_chan_pub(agent->chan, payload, K_FOREVER);
+			break;
+		}
+	}
 }
 
 static struct ipc_ept_cfg ep_cfg = {
@@ -67,65 +68,60 @@ int init_ipc(void)
 	return ret;
 }
 
-int ipc_send(struct data_packet *msg)
-{
-	int ret;
-	ret = ipc_service_send(&ep, msg, sizeof(struct data_packet));
-	if (ret < 0)
-	{
-		LOG_ERR("ipc_service_send() failure");
-		return ret;
-	}
-
-	return ret;
-}
-
-
 ZBUS_CHAN_DEFINE(sensor_chan,
 		 struct sensor_data,
 		 NULL, NULL,
 		 ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
 
-#if defined(CONFIG_BOARD_NRF5340DK_NRF5340_CPUAPP)
-
-static void agent_cb(const void *data, size_t len)
+static void listener_callback_iterables(const struct zbus_channel *chan)
 {
-	struct data_packet *packet = (struct data_packet *)data;
+	const void *msg = zbus_chan_const_msg(chan);
+	uint8_t buf[64];
 
-	LOG_INF("Received message with channel_id %d", packet->channel_id);
+	STRUCT_SECTION_FOREACH(zbus_multicore_tx, agent) {
+		if (agent->chan == chan) {
+			struct data_packet_header *header = (struct data_packet_header *)buf;
+			header->channel_id = agent->channel_id;
 
-	if (packet->channel_id == 0)
-	{
-		const struct sensor_data *msg = &packet->data.sensor;
-		zbus_chan_pub(&sensor_chan, msg, K_FOREVER);
+			if (chan->message_size > sizeof(buf) - sizeof(struct data_packet_header)) {
+				LOG_ERR("Message too big");
+				return;
+			}
+
+			memcpy(buf + sizeof(struct data_packet_header), msg, chan->message_size);
+
+			int ret = ipc_service_send(&ep, buf, sizeof(struct data_packet_header) + chan->message_size);
+			if (ret < 0) {
+				LOG_ERR("ipc_service_send() failure: %d", ret);
+			}
+			break;
+		}
 	}
 }
 
+ZBUS_LISTENER_DEFINE(listener, listener_callback_iterables);
+ZBUS_CHAN_ADD_OBS(sensor_chan, listener, 0);
 
-#elif defined(CONFIG_BOARD_NRF5340DK_NRF5340_CPUNET)
-
-static void agent_cb(const void *data, size_t len)
+void init_zbus_multicore(void)
 {
-}
+	size_t current_id = 0;
+	STRUCT_SECTION_FOREACH(zbus_multicore_channel, channel) {
+		channel->channel_id = current_id++;
 
-static void listener_callback(const struct zbus_channel *chan)
-{
-	const struct sensor_data *msg = zbus_chan_const_msg(chan);
+		STRUCT_SECTION_FOREACH(zbus_multicore_rx, agent) {
+			if (agent->chan == channel->chan) {
+				agent->channel_id = channel->channel_id;
+			}
+		}
 
-	struct data_packet packet = {
-		.channel_id = 0,
-	};
-	memcpy((void *)&packet.data.sensor, (void *)msg, sizeof(struct sensor_data));
-
-	size_t len = offsetof(struct data_packet, data.sensor) + sizeof(struct sensor_data);
-
-	int ret = ipc_service_send(&ep, &packet, len);
-	if (ret < 0) {
-		LOG_ERR("ipc_service_send() failed with ret %d", ret);
+		STRUCT_SECTION_FOREACH(zbus_multicore_tx, agent) {
+			if (agent->chan == channel->chan) {
+				agent->channel_id = channel->channel_id;
+			}
+		}
 	}
 }
-ZBUS_LISTENER_DEFINE(agent_listener, listener_callback);
-ZBUS_CHAN_ADD_OBS(sensor_chan, agent_listener, 4);
 
-#endif
+ZBUS_MULTICORE_CHANNEL_ADD(sensor_chan);
+ZBUS_MULTICORE_FORWARDER_ADD(sensor_chan, BOARD_NRF5340DK_NRF5340_CPUNET, BOARD_NRF5340DK_NRF5340_CPUAPP);

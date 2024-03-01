@@ -21,6 +21,8 @@ int main(void)
 
 	LOG_INF("IPC-service HOST demo started");
 
+	init_zbus_multicore();
+
 	ret = init_ipc();
 	if (ret) {
 		return ret;

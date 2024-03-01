@@ -12,3 +12,5 @@ project(ipc_service_remote)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../common)
 
 target_sources(app PRIVATE src/main.c ../common/common.c)
+
+zephyr_linker_sources(SECTIONS ../common/iterables.ld)
