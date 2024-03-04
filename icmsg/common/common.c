@@ -106,21 +106,21 @@ void init_zbus_multicore(void)
 {
 	size_t current_id = 0;
 	STRUCT_SECTION_FOREACH(zbus_multicore_channel, channel) {
-		channel->channel_id = current_id++;
-
 		STRUCT_SECTION_FOREACH(zbus_multicore_rx, agent) {
 			if (agent->chan == channel->chan) {
-				agent->channel_id = channel->channel_id;
+				agent->channel_id = current_id;
 			}
 		}
 
 		STRUCT_SECTION_FOREACH(zbus_multicore_tx, agent) {
 			if (agent->chan == channel->chan) {
-				agent->channel_id = channel->channel_id;
+				agent->channel_id = current_id;
 			}
 		}
+		current_id++;
 	}
 }
+ZBUS_LISTENER_DEFINE(_zbus_multicore_listener, listener_callback_iterables);
 
 ZBUS_CHAN_DEFINE(sensor_chan,
 		 struct sensor_data,
@@ -128,8 +128,7 @@ ZBUS_CHAN_DEFINE(sensor_chan,
 		 ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
 
-ZBUS_LISTENER_DEFINE(listener, listener_callback_iterables);
-ZBUS_CHAN_ADD_OBS(sensor_chan, listener, 0);
+ZBUS_CHAN_ADD_OBS(sensor_chan, _zbus_multicore_listener, 0);
 
 ZBUS_MULTICORE_CHANNEL_ADD(sensor_chan);
 ZBUS_MULTICORE_FORWARDER_ADD(sensor_chan, BOARD_NRF5340DK_NRF5340_CPUNET, BOARD_NRF5340DK_NRF5340_CPUAPP);

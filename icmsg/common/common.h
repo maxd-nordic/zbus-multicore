@@ -38,13 +38,11 @@ struct zbus_multicore_rx {
 
 struct zbus_multicore_channel {
 	const struct zbus_channel *chan;
-	uint32_t channel_id;
 };
 
 #define ZBUS_MULTICORE_CHANNEL_ADD(_chan)	\
 	STRUCT_SECTION_ITERABLE(zbus_multicore_channel, _zbus_multicore_chan_##_chan) = { \
 		.chan = &_chan, \
-		.channel_id = UINT32_MAX, \
 	};
 
 
