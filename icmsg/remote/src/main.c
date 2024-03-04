@@ -8,6 +8,7 @@
 #include <zephyr/device.h>
 
 #include "common.h"
+#include "zbus_multicore.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(remote, LOG_LEVEL_INF);
@@ -18,8 +19,9 @@ int main(void)
 
 	LOG_INF("IPC-service REMOTE demo started");
 
-	ret = init_ipc();
+	ret = init_zbus_multicore();
 	if (ret) {
+		LOG_ERR("Failed to initialize ZBus Multicore: %d", ret);
 		return ret;
 	}
 

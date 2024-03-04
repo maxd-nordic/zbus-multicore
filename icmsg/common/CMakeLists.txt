@@ -5,5 +5,5 @@
 #
 
 zephyr_include_directories(.)
-zephyr_sources(common.c)
-zephyr_linker_sources(SECTIONS iterables.ld)
+zephyr_sources(common.c zbus_multicore.c)
+zephyr_linker_sources(DATA_SECTIONS iterables.ld)

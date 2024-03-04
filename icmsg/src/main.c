@@ -8,6 +8,7 @@
 #include <zephyr/device.h>
 
 #include "common.h"
+#include "zbus_multicore.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(host, LOG_LEVEL_INF);
@@ -21,10 +22,9 @@ int main(void)
 
 	LOG_INF("IPC-service HOST demo started");
 
-	init_zbus_multicore();
-
-	ret = init_ipc();
+	ret = init_zbus_multicore();
 	if (ret) {
+		LOG_ERR("Failed to initialize ZBus Multicore: %d", ret);
 		return ret;
 	}
 
