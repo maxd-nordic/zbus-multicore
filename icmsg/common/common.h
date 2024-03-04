@@ -13,18 +13,27 @@
 
 #include <zephyr/zbus/zbus.h>
 
-struct sensor_data {
+struct temperature_data {
 	float temperature;
 	uint32_t ts;
 };
 
-struct some_other_data {
-	uint32_t some_data;
+struct humidity_data {
+	float humidity;
+	uint32_t ts;
+};
+
+struct led_data {
+	uint32_t led;
 	uint32_t ts;
 };
 
 /* channel for sensor data sent from remote to host */
-ZBUS_CHAN_DECLARE(sensor_chan);
+ZBUS_CHAN_DECLARE(temperature_chan);
+ZBUS_CHAN_DECLARE(humidity_chan);
+
+/* channel for sensor data sent from host to remote */
+ZBUS_CHAN_DECLARE(led_chan);
 
 
 #endif /* __COMMON_H__ */

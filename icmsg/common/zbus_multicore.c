@@ -104,8 +104,6 @@ static void listener_callback_iterables(const struct zbus_channel *chan)
 
 ZBUS_LISTENER_DEFINE(_zbus_multicore_listener, listener_callback_iterables);
 
-ZBUS_CHAN_DECLARE(sensor_chan);
-
 int init_zbus_multicore(void)
 {
 	int ret = 0;
