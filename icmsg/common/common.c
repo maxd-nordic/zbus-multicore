@@ -70,11 +70,7 @@ int init_ipc(void)
 	return ret;
 }
 
-ZBUS_CHAN_DEFINE(sensor_chan,
-		 struct sensor_data,
-		 NULL, NULL,
-		 ZBUS_OBSERVERS_EMPTY,
-		 ZBUS_MSG_INIT(0));
+
 
 static void listener_callback_iterables(const struct zbus_channel *chan)
 {
@@ -106,9 +102,6 @@ static void listener_callback_iterables(const struct zbus_channel *chan)
 	}
 }
 
-ZBUS_LISTENER_DEFINE(listener, listener_callback_iterables);
-ZBUS_CHAN_ADD_OBS(sensor_chan, listener, 0);
-
 void init_zbus_multicore(void)
 {
 	size_t current_id = 0;
@@ -128,6 +121,15 @@ void init_zbus_multicore(void)
 		}
 	}
 }
+
+ZBUS_CHAN_DEFINE(sensor_chan,
+		 struct sensor_data,
+		 NULL, NULL,
+		 ZBUS_OBSERVERS_EMPTY,
+		 ZBUS_MSG_INIT(0));
+
+ZBUS_LISTENER_DEFINE(listener, listener_callback_iterables);
+ZBUS_CHAN_ADD_OBS(sensor_chan, listener, 0);
 
 ZBUS_MULTICORE_CHANNEL_ADD(sensor_chan);
 ZBUS_MULTICORE_FORWARDER_ADD(sensor_chan, BOARD_NRF5340DK_NRF5340_CPUNET, BOARD_NRF5340DK_NRF5340_CPUAPP);
