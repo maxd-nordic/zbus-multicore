@@ -26,8 +26,10 @@ static void ep_recv(const void *data, size_t len, void *priv)
 	uint8_t *payload = (uint8_t *)data + sizeof(struct data_packet_header);
 	LOG_INF("Received message with channel_id %d", header->channel_id);
 
-	STRUCT_SECTION_FOREACH(zbus_multicore_rx, agent) {
-		if (agent->channel_id == header->channel_id) {
+	STRUCT_SECTION_FOREACH(zbus_multicore_rx, agent)
+	{
+		if (agent->channel_id == header->channel_id)
+		{
 			zbus_chan_pub(agent->chan, payload, K_FOREVER);
 			break;
 		}
@@ -79,12 +81,15 @@ static void listener_callback_iterables(const struct zbus_channel *chan)
 	const void *msg = zbus_chan_const_msg(chan);
 	uint8_t buf[64];
 
-	STRUCT_SECTION_FOREACH(zbus_multicore_tx, agent) {
-		if (agent->chan == chan) {
+	STRUCT_SECTION_FOREACH(zbus_multicore_tx, agent)
+	{
+		if (agent->chan == chan)
+		{
 			struct data_packet_header *header = (struct data_packet_header *)buf;
 			header->channel_id = agent->channel_id;
 
-			if (chan->message_size > sizeof(buf) - sizeof(struct data_packet_header)) {
+			if (chan->message_size > sizeof(buf) - sizeof(struct data_packet_header))
+			{
 				LOG_ERR("Message too big");
 				return;
 			}
@@ -92,7 +97,8 @@ static void listener_callback_iterables(const struct zbus_channel *chan)
 			memcpy(buf + sizeof(struct data_packet_header), msg, chan->message_size);
 
 			int ret = ipc_service_send(&ep, buf, sizeof(struct data_packet_header) + chan->message_size);
-			if (ret < 0) {
+			if (ret < 0)
+			{
 				LOG_ERR("ipc_service_send() failure: %d", ret);
 			}
 			break;
