@@ -4,9 +4,17 @@
 #include <zephyr/ipc/ipc_service.h>
 #include <zephyr/logging/log.h>
 
+#define ZBUS_MULTICORE_FLAG_ACK BIT(0)
+
 struct data_packet_header
 {
 	uint32_t channel_id;
+};
+
+struct zbus_multicore_control_message {
+	struct data_packet_header header;
+	uint32_t orginial_channel_id;
+	uint32_t flags;
 };
 
 LOG_MODULE_REGISTER(zbus_multicore, LOG_LEVEL_INF);
@@ -18,6 +26,8 @@ static void ep_bound(void *priv)
 	k_sem_give(&bound_sem);
 	LOG_INF("Ep bounded");
 }
+
+STRUCT_SECTION_ITERABLE(zbus_multicore_channel, _zbus_multicore_system_channel) = {0};
 
 static struct ipc_ept ep;
 
@@ -32,6 +42,21 @@ static void ep_recv(const void *data, size_t len, void *priv)
 		if (agent->channel_id == header->channel_id)
 		{
 			zbus_chan_pub(agent->chan, payload, K_FOREVER);
+			// if this is a blocking forwarder, we need to send an ack
+			if (header->flags & ZBUS_MULTICORE_FLAG_BLOCKING) {
+				struct zbus_multicore_control_message ack = {
+					.header = {
+						.channel_id = _zbus_multicore_system_channel.channel_id,
+						.flags = ZBUS_MULTICORE_FLAG_ACK,
+					},
+					.orginial_channel_id = header->channel_id,
+				};
+				int ret = ipc_service_send(&ep, &ack, sizeof(ack));
+				if (ret < 0)
+				{
+					LOG_ERR("ipc_service_send() failure: %d", ret);
+				}
+			}
 			break;
 		}
 	}
@@ -132,7 +157,7 @@ int init_zbus_multicore(void)
 				agent->channel_id = current_id;
 			}
 		}
-		current_id++;
+		channel->channel_id = current_id++;
 	}
 
 	return ret;

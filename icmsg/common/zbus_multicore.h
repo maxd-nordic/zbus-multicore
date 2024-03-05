@@ -13,36 +13,48 @@ struct zbus_multicore_tx
 {
 	const struct zbus_channel *chan;
 	uint32_t channel_id;
+	uint32_t flags;
 };
 
 struct zbus_multicore_rx
 {
 	const struct zbus_channel *chan;
 	uint32_t channel_id;
+	uint32_t flags;
 };
 
 struct zbus_multicore_channel
 {
 	const struct zbus_channel *chan;
+	uint32_t channel_id;
+	uint32_t flags;
 };
 
 #define ZBUS_MULTICORE_CHANNEL_ADD(_chan)                                                 \
-	const STRUCT_SECTION_ITERABLE(zbus_multicore_channel, _zbus_multicore_chan_##_chan) = { \
+	STRUCT_SECTION_ITERABLE(zbus_multicore_channel, _zbus_multicore_chan_##_chan) = { \
 	    .chan = &_chan,                                                               \
 	};                                                                                \
 	extern struct zbus_observer _zbus_multicore_listener;                             \
 	ZBUS_CHAN_ADD_OBS(_chan, _zbus_multicore_listener, 0);
 
-#define ZBUS_MULTICORE_FORWARDER_ADD(_chan, _source, _dest)                             \
+#define ZBUS_MULTICORE_FORWARDER_ADD(_chan, _source, _dest)                              \
+	ZBUS_MULTICORE_FORWARDER_ADD_WITH_FLAGS(_chan, _source, _dest, 0)
+
+#define ZBUS_MULTICORE_BLOCKING_FORWARDER_ADD(_chan, _source, _dest)                     \
+	ZBUS_MULTICORE_FORWARDER_ADD_WITH_FLAGS(_chan, _source, _dest, 1)
+
+#define ZBUS_MULTICORE_FORWARDER_ADD_WITH_FLAGS(_chan, _source, _dest, _flags)          \
 	COND_CODE_1(                                                                    \
 	    IS_ENABLED(CONFIG_##_source),                                               \
 	    (STRUCT_SECTION_ITERABLE(zbus_multicore_tx, _zbus_multicore_tx_##_chan) = { \
 		 .chan = &_chan,                                                        \
 		 .channel_id = UINT32_MAX,                                              \
+		 .flags = _flags,                                                       \
 	     }),                                                                        \
 	    (STRUCT_SECTION_ITERABLE(zbus_multicore_rx, _zbus_multicore_rx_##_chan) = { \
 		 .chan = &_chan,                                                        \
 		 .channel_id = UINT32_MAX,                                              \
+		 .flags = _flags,                                                       \
 	     }))
 
 int init_zbus_multicore(void);
