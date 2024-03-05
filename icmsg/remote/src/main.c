@@ -44,6 +44,10 @@ int main(void)
 			hum.humidity, hum.ts);
 		zbus_chan_pub(&humidity_chan, &hum, K_NO_WAIT);
 		k_sleep(K_SECONDS(1));
+
+		struct led_data led = {0};
+		zbus_chan_read(&led_chan, &led, K_FOREVER);
+		LOG_INF("Received led data: led %d, ts %u", led.led, led.ts);
 	}
 	return 0;
 }

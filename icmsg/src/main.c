@@ -31,6 +31,8 @@ int main(void)
 
 	LOG_INF("ZBus Multicore sample started");
 
+	struct led_data led = {.led = 1, .ts = k_uptime_get_32()};
+
 	while (true) {
 		struct temperature_data sensor = {0};
 		const struct zbus_channel *chan = NULL;
@@ -41,6 +43,9 @@ int main(void)
 				LOG_INF("Received sensor data: temperature %f, ts %u",
 					sensor.temperature, sensor.ts);
 			}
+			led.ts = k_uptime_get_32();
+			led.led = !led.led;
+			zbus_chan_pub(&led_chan, &led, K_NO_WAIT);
 		} else if (&humidity_chan == chan) {
 			struct humidity_data hum = {0};
 			ret = zbus_chan_read(&humidity_chan, &hum, K_NO_WAIT);
